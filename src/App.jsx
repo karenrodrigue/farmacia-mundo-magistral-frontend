@@ -53,7 +53,7 @@ function App() {
       })
 
       const datos = await obtenerProductos(usuario.token)
-      setProductos(Array.isArray(datos) ? datos : datos.productos || [])
+      setProductos((Array.isArray(datos) ? datos : datos.productos || []).filter(producto => producto.activo === true))
       setMostrarProductos(true)
     } catch (err) {
       setErrorProductos(err.message || 'Error al registrar medicamento')
@@ -68,7 +68,7 @@ function App() {
     try {
       const datos = await obtenerProductos(usuario.token)
 
-      setProductos(Array.isArray(datos) ? datos : datos.productos || [])
+      setProductos((Array.isArray(datos) ? datos : datos.productos || []).filter(producto => producto.activo === true))
       setMostrarProductos(true)
     } catch (err) {
       setErrorProductos(err.message || 'Error al consultar productos')
