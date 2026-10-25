@@ -58,3 +58,49 @@ export async function registrarProducto(token, producto) {
 
   return datos
 }
+
+export async function registrarVenta(token, venta) {
+  const respuesta = await fetch(`${API_URL}/ventas`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(venta),
+  })
+
+  const datos = await respuesta.json()
+
+  if (!respuesta.ok) {
+    throw new Error(
+      typeof datos.detail === 'string'
+        ? datos.detail
+        : 'No se pudo registrar la venta'
+    )
+  }
+
+  return datos
+}
+
+export async function registrarCompra(token, compra) {
+  const respuesta = await fetch(`${API_URL}/compras`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(compra),
+  })
+
+  const datos = await respuesta.json()
+
+  if (!respuesta.ok) {
+    throw new Error(
+      typeof datos.detail === 'string'
+        ? datos.detail
+        : 'No se pudo registrar la compra'
+    )
+  }
+
+  return datos
+}

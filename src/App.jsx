@@ -1,8 +1,7 @@
 
 import { useState } from 'react'
-import { iniciarSesion, obtenerProductos, registrarProducto } from './api'
+import { iniciarSesion, obtenerProductos, registrarProducto, registrarVenta, registrarCompra } from './api'
 import './App.css'
-
 function App() {
   const [correo, setCorreo] = useState('')
   const [password, setPassword] = useState('')
@@ -13,6 +12,18 @@ function App() {
   const [mostrarProductos, setMostrarProductos] = useState(false)
   const [mostrarGrafico3D, setMostrarGrafico3D] = useState(false)
   const [errorProductos, setErrorProductos] = useState('')
+  const [moduloActivo, setModuloActivo] = useState('inicio')
+  const [ventaProducto, setVentaProducto] = useState('')
+  const [ventaCantidad, setVentaCantidad] = useState(1)
+  const [mensajeVenta, setMensajeVenta] = useState('')
+  const [guardandoVenta, setGuardandoVenta] = useState(false)
+  const [compraProveedor, setCompraProveedor] = useState('')
+  const [compraProducto, setCompraProducto] = useState('')
+  const [compraCantidad, setCompraCantidad] = useState(1)
+  const [compraPrecio, setCompraPrecio] = useState('')
+  const [compraFactura, setCompraFactura] = useState('')
+  const [mensajeCompra, setMensajeCompra] = useState('')
+  const [guardandoCompra, setGuardandoCompra] = useState(false)
   
   const [nuevoProducto, setNuevoProducto] = useState({
     codigo: '',
@@ -155,37 +166,302 @@ function App() {
               Cerrar sesión
             </button>
 
-            <section className="modulos">
-              <div
-                role="button"
-                tabIndex={0}
-                onClick={consultarProductos}
-                onKeyDown={(e) => {
-                    if (e.key === 'Enter') consultarProductos()
-                  }}
-                 style={{ cursor: 'pointer' }}
-              >
-                  💊 Productos
-              </div>
+<div className="panel-administrativo">          
+<aside className="modulos">
+  <button type="button" onClick={() => setModuloActivo('inicio')}>
+    🏠 Inicio
+  </button>
 
-              <div>🛒 Ventas</div>
-              <div>📦 Compras</div>
-              <div
-                role="button"
-                tabIndex={0}
-                onClick={() => setMostrarGrafico3D(true)}
-                onKeyDown={(e) => {
-                    if (e.key === 'Enter') setMostrarGrafico3D(true)
-                  }}
-                  style={{ cursor: 'pointer' }}
-                >
-                    📊 Inventario y Kardex
-                  </div>
-              <div>👥 Usuarios</div>
-              <div>📅 Lotes y vencimientos</div>
-            </section>
+  <button type="button" onClick={() => {
+    setModuloActivo('productos')
+    consultarProductos()
+  }}>
+    💊 Productos
+  </button>
+
+  <button type="button" onClick={() => setModuloActivo('ventas')}>
+    🛒 Ventas
+  </button>
+
+  <button type="button" onClick={() => {
+  setModuloActivo('compras')
+  consultarProductos()
+}}>
+    📦 Compras
+  </button>
+
+  <button type="button" onClick={() => {
+    setModuloActivo('inventario')
+    setMostrarGrafico3D(true)
+  }}>
+    📊 Inventario y Kardex
+  </button>
+
+  <button type="button" onClick={() => setModuloActivo('usuarios')}>
+    👥 Usuarios
+  </button>
+
+  <button type="button" onClick={() => setModuloActivo('lotes')}>
+    📅 Lotes y vencimientos
+  </button>
+</aside>
+<div className="contenido-principal">
+  
+{moduloActivo === 'inicio' && (
+  <section className="lista-productos">
+    <h2>🏠 Panel principal</h2>
+    <p>Bienvenido al sistema de Farmacia Mundo Magistral.</p>
+    <p>Selecciona un módulo del menú izquierdo para comenzar.</p>
+  </section>
+)}
+
+{moduloActivo === 'ventas' && (
+  <section className="lista-productos">
+    <h2>🛒 Registrar nueva venta</h2>
+    <p>Selecciona un medicamento e indica la cantidad.</p>
+
+    <form onSubmit={async (e) => {
+      e.preventDefault()
+      setMensajeVenta('')
+
+      const producto = productos.find(
+        p => p.id_producto === Number(ventaProducto)
+      )
+
+      if (!producto) {
+        setMensajeVenta('Selecciona un medicamento válido.')
+        return
+      }
+
+      if (Number(ventaCantidad) > Number(producto.stock_actual)) {
+        setMensajeVenta('No hay suficiente stock disponible.')
+        return
+      }
+
+      setGuardandoVenta(true)
+
+      try {
+        await registrarVenta(usuario.token, {
+          id_producto: Number(ventaProducto),
+          cantidad: Number(ventaCantidad),
+          id_cliente: null
+        })
+
+        setMensajeVenta('Venta registrada correctamente.')
+        setVentaProducto('')
+        setVentaCantidad(1)
+
+        const datos = await obtenerProductos(usuario.token)
+        setProductos(
+          Array.isArray(datos) ? datos : datos.productos || []
+        )
+      } catch (err) {
+        setMensajeVenta(err.message || 'Error al registrar la venta.')
+      } finally {
+        setGuardandoVenta(false)
+      }
+    }} className="form-producto">
+
+      <label>
+        Medicamento
+        <select
+          value={ventaProducto}
+          onChange={(e) => setVentaProducto(e.target.value)}
+          required
+        >
+          <option value="">Seleccionar medicamento</option>
+          {productos
+            .filter(p => p.activo === true)
+            .map(p => (
+              <option key={p.id_producto} value={p.id_producto}>
+                {p.nombre} — Bs {p.precio_venta} — Stock: {p.stock_actual}
+              </option>
+            ))}
+        </select>
+      </label>
+
+      <label>
+        Cantidad
+        <input
+          type="number"
+          min="1"
+          step="1"
+          value={ventaCantidad}
+          onChange={(e) => setVentaCantidad(e.target.value)}
+          required
+        />
+      </label>
+
+      <p>
+        <strong>Total: Bs {
+          (
+            (Number(productos.find(
+              p => p.id_producto === Number(ventaProducto)
+            )?.precio_venta) || 0) *
+            (Number(ventaCantidad) || 0)
+          ).toFixed(2)
+        }</strong>
+      </p>
+
+      <button type="submit" disabled={guardandoVenta}>
+        {guardandoVenta ? 'Registrando...' : 'Confirmar venta'}
+      </button>
+    </form>
+
+    {mensajeVenta && <p role="status">{mensajeVenta}</p>}
+  </section>
+)}
+
+{moduloActivo === 'compras' && (
+  <section className="lista-productos">
+    <h2>📦 Registrar nueva compra</h2>
+    <p>Registra el ingreso de medicamentos al inventario.</p>
+
+    <form
+      className="form-producto"
+      onSubmit={async (e) => {
+        e.preventDefault()
+        setMensajeCompra('')
+
+        const cantidad = Number(compraCantidad)
+        const precio = Number(compraPrecio)
+        const proveedor = Number(compraProveedor)
+        const producto = Number(compraProducto)
+
+        if (
+          !Number.isInteger(proveedor) || proveedor <= 0 ||
+          !Number.isInteger(producto) || producto <= 0 ||
+          !Number.isInteger(cantidad) || cantidad <= 0 ||
+          !Number.isFinite(precio) || precio < 0
+        ) {
+          setMensajeCompra('Revisa los datos de la compra.')
+          return
+        }
+
+        setGuardandoCompra(true)
+
+        try {
+          await registrarCompra(usuario.token, {
+            id_proveedor: proveedor,
+            id_producto: producto,
+            cantidad: cantidad,
+            precio_unitario: precio,
+            numero_factura: compraFactura.trim() || null
+          })
+
+          setMensajeCompra('Compra registrada correctamente.')
+          setCompraProducto('')
+          setCompraCantidad(1)
+          setCompraPrecio('')
+          setCompraFactura('')
+
+          const datos = await obtenerProductos(usuario.token)
+          setProductos(
+            Array.isArray(datos) ? datos : datos.productos || []
+          )
+        } catch (err) {
+          setMensajeCompra(err.message || 'Error al registrar la compra.')
+        } finally {
+          setGuardandoCompra(false)
+        }
+      }}
+    >
+      <label>
+        ID del proveedor
+        <input
+          type="number"
+          min="1"
+          step="1"
+          value={compraProveedor}
+          onChange={(e) => setCompraProveedor(e.target.value)}
+          placeholder="ID de un proveedor existente"
+          required
+        />
+      </label>
+
+      <label>
+        Medicamento
+        <select
+          value={compraProducto}
+          onChange={(e) => setCompraProducto(e.target.value)}
+          required
+        >
+          <option value="">Seleccionar medicamento</option>
+          {productos
+            .filter(p => p.activo === true)
+            .map(p => (
+              <option key={p.id_producto} value={p.id_producto}>
+                {p.nombre} — Stock: {p.stock_actual}
+              </option>
+            ))}
+        </select>
+      </label>
+
+      <label>
+        Cantidad
+        <input
+          type="number"
+          min="1"
+          step="1"
+          value={compraCantidad}
+          onChange={(e) => setCompraCantidad(e.target.value)}
+          required
+        />
+      </label>
+
+      <label>
+        Precio unitario (Bs)
+        <input
+          type="number"
+          min="0"
+          step="0.01"
+          value={compraPrecio}
+          onChange={(e) => setCompraPrecio(e.target.value)}
+          required
+        />
+      </label>
+
+      <label>
+        Número de factura (opcional)
+        <input
+          type="text"
+          value={compraFactura}
+          onChange={(e) => setCompraFactura(e.target.value)}
+        />
+      </label>
+
+      <p>
+        <strong>
+          Total: Bs {(Number(compraCantidad) * Number(compraPrecio || 0)).toFixed(2)}
+        </strong>
+      </p>
+
+      <button type="submit" disabled={guardandoCompra}>
+        {guardandoCompra ? 'Registrando...' : 'Confirmar compra'}
+      </button>
+    </form>
+
+    {mensajeCompra && <p role="status">{mensajeCompra}</p>}
+  </section>
+)}
+
+{['usuarios', 'lotes'].includes(moduloActivo) && (
+  <section className="lista-productos">
+    <h2>
+      {{
+        ventas: '🛒 Ventas',
+        compras: '📦 Compras',
+        usuarios: '👥 Usuarios',
+        lotes: '📅 Lotes y vencimientos'
+      }[moduloActivo]}
+    </h2>
+    <p>Seleccionaste el módulo correspondiente.</p>
+    <p>La interfaz de este módulo está pendiente de implementación.</p>
+  </section>
+)}
+
             
-          {mostrarGrafico3D && (
+          {moduloActivo === 'inventario' && mostrarGrafico3D && (
               <section className="lista-productos">
                 <h2>📊 Inventario y Kardex — Gráfico 3D</h2>
                 <iframe
@@ -212,7 +488,7 @@ function App() {
                 {errorProductos}
               </p>
             )}
-            
+            {moduloActivo === 'productos' && (
             <section className="lista-productos">
               <h2>Registrar nuevo medicamento</h2>
 
@@ -305,9 +581,10 @@ function App() {
 
               {mensajeProducto && <p>{mensajeProducto}</p>}
             </section>
+            )}
 
 
-            {mostrarProductos && (
+            {moduloActivo === 'productos' && mostrarProductos && (
               <section className="lista-productos">
                 <h2>💊 Productos registrados</h2>
 
@@ -336,13 +613,16 @@ function App() {
                   </table>
                 )}
               </section>
-            )}
-
-          </>
-        )}
-      </main>
-    </div>
-  )
+            
+      )}
+        </div>
+      </div>
+    </>
+  )}
+</main>
+</div>
+)
 }
-
+ 
 export default App
+

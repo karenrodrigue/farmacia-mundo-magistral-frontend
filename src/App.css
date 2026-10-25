@@ -228,3 +228,70 @@ main h2 {
     grid-template-columns: 1fr;
   }
 }
+
+/* Panel administrativo - Farmacia Mundo Magistral */
+.modulos {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 230px;
+  flex-shrink: 0;
+  padding: 20px;
+  background: #126b52;
+  border-radius: 14px;
+}
+
+.modulos button {
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: white;
+  text-align: left;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.modulos button:hover,
+.modulos button:focus-visible {
+  background: #ffffff25;
+}
+
+/* Distribución del panel administrativo */
+.panel-administrativo {
+  display: grid;
+  grid-template-columns: 230px minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+  width: 100%;
+  margin-top: 20px;
+}
+
+.panel-administrativo .modulos {
+  width: 100%;
+  box-sizing: border-box;
+  position: sticky;
+  top: 20px;
+}
+
+.contenido-principal {
+  min-width: 0;
+  width: 100%;
+}
+
+.contenido-principal > section {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Adaptación para celulares */
+@media (max-width: 768px) {
+  .panel-administrativo {
+    grid-template-columns: 1fr;
+  }
+
+  .panel-administrativo .modulos {
+    position: static;
+  }
+}
