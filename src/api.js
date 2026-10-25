@@ -104,3 +104,66 @@ export async function registrarCompra(token, compra) {
 
   return datos
 }
+
+export async function obtenerKardex(token) {
+  const respuesta = await fetch(`${API_URL}/kardex`, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+
+  const datos = await respuesta.json()
+
+  if (!respuesta.ok) {
+    throw new Error(
+      typeof datos.detail === 'string'
+        ? datos.detail
+        : 'No se pudo consultar el Kardex'
+    )
+  }
+
+  return datos
+}
+
+export async function obtenerMiPerfil(token) {
+  const respuesta = await fetch(`${API_URL}/mi-perfil`, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+
+  const datos = await respuesta.json()
+
+  if (!respuesta.ok) {
+    throw new Error(
+      typeof datos.detail === 'string'
+        ? datos.detail
+        : 'No se pudo consultar el perfil'
+    )
+  }
+
+  return datos
+}
+
+export async function obtenerLotes(token) {
+  const respuesta = await fetch(`${API_URL}/lotes`, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+
+  const datos = await respuesta.json()
+
+  if (!respuesta.ok) {
+    throw new Error(
+      typeof datos.detail === 'string'
+        ? datos.detail
+        : 'No se pudieron consultar los lotes'
+    )
+  }
+
+  return datos
+}

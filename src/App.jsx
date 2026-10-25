@@ -1,6 +1,6 @@
 
 import { useState } from 'react'
-import { iniciarSesion, obtenerProductos, registrarProducto, registrarVenta, registrarCompra } from './api'
+import { iniciarSesion, obtenerProductos, registrarProducto, registrarVenta, registrarCompra, obtenerKardex, obtenerMiPerfil, obtenerLotes } from './api'
 import './App.css'
 function App() {
   const [correo, setCorreo] = useState('')
@@ -13,6 +13,15 @@ function App() {
   const [mostrarGrafico3D, setMostrarGrafico3D] = useState(false)
   const [errorProductos, setErrorProductos] = useState('')
   const [moduloActivo, setModuloActivo] = useState('inicio')
+  const [perfilUsuario, setPerfilUsuario] = useState(null)
+  const [errorPerfil, setErrorPerfil] = useState('')
+  const [cargandoPerfil, setCargandoPerfil] = useState(false)
+  const [lotes, setLotes] = useState([])
+  const [errorLotes, setErrorLotes] = useState('')
+  const [cargandoLotes, setCargandoLotes] = useState(false)
+  const [movimientosKardex, setMovimientosKardex] = useState([])
+  const [errorKardex, setErrorKardex] = useState('')
+  const [cargandoKardex, setCargandoKardex] = useState(false)
   const [ventaProducto, setVentaProducto] = useState('')
   const [ventaCantidad, setVentaCantidad] = useState(1)
   const [mensajeVenta, setMensajeVenta] = useState('')
@@ -190,18 +199,64 @@ function App() {
     📦 Compras
   </button>
 
-  <button type="button" onClick={() => {
-    setModuloActivo('inventario')
-    setMostrarGrafico3D(true)
-  }}>
+  
+<button type="button" onClick={async () => {
+  setModuloActivo('inventario')
+  setMostrarGrafico3D(true)
+  setErrorKardex('')
+  setCargandoKardex(true)
+
+  try {
+    const datos = await obtenerKardex(usuario.token)
+    setMovimientosKardex(datos.movimientos || [])
+  } catch (err) {
+    setErrorKardex(err.message || 'Error al consultar el Kardex')
+    setMovimientosKardex([])
+  } finally {
+    setCargandoKardex(false)
+  }
+}}>
+
     📊 Inventario y Kardex
   </button>
 
-  <button type="button" onClick={() => setModuloActivo('usuarios')}>
+  
+<button type="button" onClick={async () => {
+  setModuloActivo('usuarios')
+  setErrorPerfil('')
+  setCargandoPerfil(true)
+  setPerfilUsuario(null)
+
+  try {
+    const datos = await obtenerMiPerfil(usuario.token)
+    setPerfilUsuario(datos.usuario || null)
+  } catch (err) {
+    setErrorPerfil(err.message || 'No se pudo consultar el perfil')
+  } finally {
+    setCargandoPerfil(false)
+  }
+}}>
+
     👥 Usuarios
   </button>
 
-  <button type="button" onClick={() => setModuloActivo('lotes')}>
+  
+<button type="button" onClick={async () => {
+  setModuloActivo('lotes')
+  setErrorLotes('')
+  setCargandoLotes(true)
+  setLotes([])
+
+  try {
+    const datos = await obtenerLotes(usuario.token)
+    setLotes(Array.isArray(datos) ? datos : datos.lotes || [])
+  } catch (err) {
+    setErrorLotes(err.message || 'No se pudieron consultar los lotes')
+  } finally {
+    setCargandoLotes(false)
+  }
+}}>
+
     📅 Lotes y vencimientos
   </button>
 </aside>
@@ -445,18 +500,107 @@ function App() {
   </section>
 )}
 
-{['usuarios', 'lotes'].includes(moduloActivo) && (
+{moduloActivo === 'usuarios' && (
   <section className="lista-productos">
-    <h2>
-      {{
-        ventas: '🛒 Ventas',
-        compras: '📦 Compras',
-        usuarios: '👥 Usuarios',
-        lotes: '📅 Lotes y vencimientos'
-      }[moduloActivo]}
-    </h2>
-    <p>Seleccionaste el módulo correspondiente.</p>
-    <p>La interfaz de este módulo está pendiente de implementación.</p>
+    <h2>👥 Gestión de usuarios</h2>
+    <p>Información de la cuenta que inició sesión.</p>
+
+    {cargandoPerfil && <p>Cargando información del usuario...</p>}
+
+    {errorPerfil && (
+      <p className="error" role="alert">{errorPerfil}</p>
+    )}
+
+    {perfilUsuario && (
+      <div className="tarjeta-usuario">
+        <h3>👤 Perfil del usuario</h3>
+
+        <p>
+          <strong>Nombre:</strong>{' '}
+          {perfilUsuario.nombre || 'No registrado'}
+        </p>
+
+        <p>
+          <strong>Correo electrónico:</strong>{' '}
+          {perfilUsuario.correo || usuario.correo}
+        </p>
+
+        <p>
+          <strong>Rol:</strong>{' '}
+          {perfilUsuario.rol || 'No disponible'}
+        </p>
+
+        <p>
+          <strong>Estado:</strong>{' '}
+          {perfilUsuario.activo === false ? 'Inactivo' : 'Activo'}
+        </p>
+      </div>
+    )}
+  </section>
+)}
+
+
+{moduloActivo === 'lotes' && (
+  <section className="lista-productos">
+    <h2>📅 Lotes y vencimientos</h2>
+    <p>Control de lotes y fechas de vencimiento de medicamentos.</p>
+
+    {cargandoLotes && <p>Cargando lotes...</p>}
+
+    {errorLotes && (
+      <p className="error" role="alert">{errorLotes}</p>
+    )}
+
+    {!cargandoLotes && !errorLotes && (
+      lotes.length === 0 ? (
+        <p>No hay lotes registrados.</p>
+      ) : (
+        <div style={{ overflowX: 'auto' }}>
+          <table>
+            <thead>
+              <tr>
+                <th>Medicamento</th>
+                <th>Número de lote</th>
+                <th>Vencimiento</th>
+                <th>Stock</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              {lotes.map((lote) => {
+                const fecha = new Date(
+                  `${String(lote.fecha_vencimiento).slice(0, 10)}T00:00:00`
+                )
+                const hoy = new Date()
+                hoy.setHours(0, 0, 0, 0)
+
+                const dias = Math.ceil(
+                  (fecha.getTime() - hoy.getTime()) / 86400000
+                )
+
+                const estado = !Number.isFinite(dias)
+                  ? 'Fecha no disponible'
+                  : dias < 0
+                    ? 'Vencido'
+                    : dias <= 30
+                      ? 'Próximo a vencer'
+                      : 'Vigente'
+
+                return (
+                  <tr key={lote.id_lote}>
+                    <td>{lote.producto}</td>
+                    <td>{lote.numero_lote}</td>
+                    <td>{String(lote.fecha_vencimiento).slice(0, 10)}</td>
+                    <td>{lote.stock_lote}</td>
+                    <td>{estado}</td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      )
+    )}
   </section>
 )}
 
@@ -482,6 +626,56 @@ function App() {
               </button>
             </section>
           )}
+          
+{moduloActivo === 'inventario' && (
+  <section className="lista-productos">
+    <h2>📋 Kardex — Movimientos de inventario</h2>
+
+    {cargandoKardex && <p>Cargando movimientos...</p>}
+
+    {errorKardex && (
+      <p className="error" role="alert">{errorKardex}</p>
+    )}
+
+    {!cargandoKardex && !errorKardex && (
+      movimientosKardex.length === 0 ? (
+        <p>No hay movimientos registrados.</p>
+      ) : (
+        <div style={{ overflowX: 'auto' }}>
+          <table>
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Medicamento</th>
+                <th>Movimiento</th>
+                <th>Cantidad</th>
+                <th>Anterior</th>
+                <th>Final</th>
+                <th>Responsable</th>
+              </tr>
+            </thead>
+            <tbody>
+              {movimientosKardex.map((movimiento) => (
+                <tr key={movimiento.id_movimiento}>
+                  <td>{movimiento.fecha_movimiento
+                    ? new Date(movimiento.fecha_movimiento).toLocaleString('es-BO')
+                    : '—'}</td>
+                  <td>{movimiento.producto || '—'}</td>
+                  <td>{movimiento.tipo_movimiento}</td>
+                  <td>{movimiento.cantidad}</td>
+                  <td>{movimiento.cantidad_previa}</td>
+                  <td>{movimiento.cantidad_final}</td>
+                  <td>{movimiento.responsable || 'No registrado'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )
+    )}
+  </section>
+)}
+
 
             {errorProductos && (
               <p className="error" role="alert">
