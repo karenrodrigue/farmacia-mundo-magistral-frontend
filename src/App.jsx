@@ -11,6 +11,7 @@ function App() {
   const [cargando, setCargando] = useState(false)
   const [productos, setProductos] = useState([])
   const [mostrarProductos, setMostrarProductos] = useState(false)
+  const [mostrarGrafico3D, setMostrarGrafico3D] = useState(false)
   const [errorProductos, setErrorProductos] = useState('')
   
   const [nuevoProducto, setNuevoProducto] = useState({
@@ -169,11 +170,43 @@ function App() {
 
               <div>🛒 Ventas</div>
               <div>📦 Compras</div>
-              <div>📊 Inventario y Kardex</div>
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => setMostrarGrafico3D(true)}
+                onKeyDown={(e) => {
+                    if (e.key === 'Enter') setMostrarGrafico3D(true)
+                  }}
+                  style={{ cursor: 'pointer' }}
+                >
+                    📊 Inventario y Kardex
+                  </div>
               <div>👥 Usuarios</div>
               <div>📅 Lotes y vencimientos</div>
             </section>
             
+          {mostrarGrafico3D && (
+              <section className="lista-productos">
+                <h2>📊 Inventario y Kardex — Gráfico 3D</h2>
+                <iframe
+                  src="/graficos/inventario_3d.html"
+                  title="Gráfico 3D del inventario"
+                  style={{
+                    width: '100%',
+                    height: '650px',
+                    border: 'none',
+                    borderRadius: '12px'
+                  }}
+               />
+               <button
+                 type="button"
+                 onClick={() => setMostrarGrafico3D(false)}
+               >
+                 Cerrar gráfico
+              </button>
+            </section>
+          )}
+
             {errorProductos && (
               <p className="error" role="alert">
                 {errorProductos}
