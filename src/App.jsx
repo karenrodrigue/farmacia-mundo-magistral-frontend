@@ -2,6 +2,8 @@
 import { useState } from 'react'
 import { iniciarSesion, obtenerProductos, registrarProducto, registrarVenta, registrarCompra, obtenerKardex, obtenerMiPerfil, obtenerLotes } from './api'
 import './App.css'
+import GraficoInventario3D from './GraficoInventario3D'
+
 function App() {
   const [correo, setCorreo] = useState('')
   const [password, setPassword] = useState('')
@@ -202,6 +204,7 @@ function App() {
   
 <button type="button" onClick={async () => {
   setModuloActivo('inventario')
+  consultarProductos()
   setMostrarGrafico3D(true)
   setErrorKardex('')
   setCargandoKardex(true)
@@ -608,16 +611,7 @@ function App() {
           {moduloActivo === 'inventario' && mostrarGrafico3D && (
               <section className="lista-productos">
                 <h2>📊 Inventario y Kardex — Gráfico 3D</h2>
-                <iframe
-                  src="/graficos/inventario_3d.html"
-                  title="Gráfico 3D del inventario"
-                  style={{
-                    width: '100%',
-                    height: '650px',
-                    border: 'none',
-                    borderRadius: '12px'
-                  }}
-               />
+                <GraficoInventario3D productos={productos} />
                <button
                  type="button"
                  onClick={() => setMostrarGrafico3D(false)}
